@@ -1,1 +1,1 @@
-# bias-clarity-extension
+# Argument Bias Clarifier
