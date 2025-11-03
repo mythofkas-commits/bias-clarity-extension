@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argument Clarifier - Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Argument Clarifier Settings</h1>
+    </header>
+
+    <form id="options-form">
+      <div class="form-group">
+        <label for="api-base">API Base URL</label>
+        <input 
+          type="text" 
+          id="api-base" 
+          name="apiBase"
+          placeholder="https://api.kasra.one"
+        >
+        <p class="help-text">The backend server URL for cloud analysis</p>
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="cloud-analysis" name="cloudAnalysis">
+          <span>Enable cloud analysis</span>
+        </label>
+        <p class="help-text">
+          When disabled, only local heuristics will be used (reduced detail)
+        </p>
+      </div>
+
+      <div class="form-group">
+        <button type="submit" class="save-btn">Save Settings</button>
+      </div>
+
+      <div id="status" class="status hidden"></div>
+    </form>
+
+    <div class="info-section">
+      <h2>Privacy & Security</h2>
+      <ul>
+        <li>API keys are never stored in the extension</li>
+        <li>Text content is sent to the configured backend only</li>
+        <li>The extension does not track or store your browsing history</li>
+        <li>Local analysis mode processes text entirely in your browser</li>
+      </ul>
+
+      <h2>About</h2>
+      <p>
+        Argument Clarifier helps you understand the structure of arguments 
+        without making truth judgments. It identifies claims, reasoning 
+        patterns, language cues, and potential logical issues.
+      </p>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
