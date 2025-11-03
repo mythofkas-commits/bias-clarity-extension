@@ -43,7 +43,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     let merged;
     let model;
-    let totalTokens = { input: 0, output: 0 };
+    const totalTokens = { input: 0, output: 0 };
 
     try {
       // Try LLM analysis

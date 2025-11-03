@@ -3,29 +3,38 @@
  * This simulates the browser environment for testing
  */
 
-// Mock the module export check
-global.module = undefined;
-
-// Load the inference module
+// Load the inference module by executing it
 const fs = require('fs');
 const path = require('path');
-const inferenceCode = fs.readFileSync(
-  path.join(__dirname, '../extension/src/heuristics/inference.js'),
-  'utf8'
-);
-
-// Execute in a test context
-const findInferences = (function() {
-  eval(inferenceCode);
-  return findInferences;
-})();
 
 describe('Inference Detection', () => {
+  let findInferences: (text: string) => Array<{
+    type: string;
+    span: [number, number];
+    explanation: string;
+  }>;
+
+  beforeAll(() => {
+    // Load and execute the inference.js file
+    const inferenceCode = fs.readFileSync(
+      path.join(__dirname, '../extension/src/heuristics/inference.js'),
+      'utf8'
+    );
+    
+    // Execute in a safe context
+    const vm = require('vm');
+    const sandbox: any = { module: { exports: {} } };
+    vm.createContext(sandbox);
+    vm.runInContext(inferenceCode, sandbox);
+    
+    findInferences = sandbox.module.exports.findInferences;
+  });
+
   it('should detect correlation to causation patterns', () => {
     const text = 'Studies show that coffee consumption is associated with better health.';
     const inferences = findInferences(text);
     
-    const correlationInferences = inferences.filter(i => i.type === 'CORRELATION_TO_CAUSATION');
+    const correlationInferences = inferences.filter((i: any) => i.type === 'CORRELATION_TO_CAUSATION');
     expect(correlationInferences.length).toBeGreaterThan(0);
     expect(correlationInferences[0].explanation).toContain('Correlation');
   });
@@ -34,7 +43,7 @@ describe('Inference Detection', () => {
     const text = 'In my experience, this approach always works.';
     const inferences = findInferences(text);
     
-    const anecdoteInferences = inferences.filter(i => i.type === 'ANECDOTE_TO_GENERALIZATION');
+    const anecdoteInferences = inferences.filter((i: any) => i.type === 'ANECDOTE_TO_GENERALIZATION');
     expect(anecdoteInferences.length).toBeGreaterThan(0);
     expect(anecdoteInferences[0].explanation).toContain('Personal experience');
   });
@@ -43,7 +52,7 @@ describe('Inference Detection', () => {
     const text = 'All politicians are corrupt.';
     const inferences = findInferences(text);
     
-    const partWholeInferences = inferences.filter(i => i.type === 'PART_TO_WHOLE');
+    const partWholeInferences = inferences.filter((i: any) => i.type === 'PART_TO_WHOLE');
     expect(partWholeInferences.length).toBeGreaterThan(0);
     expect(partWholeInferences[0].explanation).toContain('Universal claim');
   });

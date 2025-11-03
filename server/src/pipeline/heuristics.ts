@@ -47,8 +47,8 @@ const PART_WHOLE_PATTERNS = [
 const URL_PATTERN = /https?:\/\/[^\s]+/g;
 const DOI_PATTERN = /10\.\d{4,}\/[^\s]+/g;
 const CITATION_PATTERN = /\([^)]*\d{4}[^)]*\)/g;
-const NUMBER_PATTERN = /\d+(?:[.,]\d+)*%?/g;
-const DATE_PATTERN = /\b\d{4}\b|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi;
+// const NUMBER_PATTERN = /\d+(?:[.,]\d+)*%?/g;  // Reserved for future use
+// const DATE_PATTERN = /\b\d{4}\b|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi;  // Reserved for future use
 
 /**
  * Run heuristic analysis on text
@@ -83,7 +83,6 @@ export function runHeuristics(text: string): ClarifierChunk {
  */
 function findLanguageCues(text: string): Cue[] {
   const cues: Cue[] = [];
-  const lowerText = text.toLowerCase();
 
   // Find hedges
   for (const word of HEDGE_WORDS) {
@@ -252,7 +251,8 @@ function generateAssumptions(text: string): string[] {
 /**
  * Generate questions to consider
  */
-function generateQuestions(text: string): string[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function generateQuestions(_text: string): string[] {
   const questions = [
     'What evidence supports the main claims?',
     'Are there alternative explanations?',
