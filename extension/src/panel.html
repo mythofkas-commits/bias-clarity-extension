@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Argument Clarifier</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Argument Clarifier</h1>
+      <div id="mode-indicator">
+        <span id="mode-text">Ready</span>
+      </div>
+    </header>
+
+    <div id="loading" class="hidden">
+      <div class="spinner"></div>
+      <p>Analyzing content...</p>
+    </div>
+
+    <div id="error" class="hidden">
+      <p class="error-message"></p>
+      <button id="retry-btn">Retry</button>
+    </div>
+
+    <div id="results" class="hidden">
+      <!-- Claims Section -->
+      <section class="section">
+        <h2>Main Claims</h2>
+        <div id="claims-list"></div>
+      </section>
+
+      <!-- Toulmin Structure -->
+      <section class="section">
+        <h2>Argument Structure</h2>
+        <div id="toulmin-list"></div>
+      </section>
+
+      <!-- Assumptions -->
+      <section class="section">
+        <h2>Assumptions</h2>
+        <ul id="assumptions-list"></ul>
+      </section>
+
+      <!-- Language Cues -->
+      <section class="section">
+        <h2>Language Cues</h2>
+        <div class="cue-legend">
+          <span class="legend-item"><span class="cue-badge hedge">Hedge</span> - Weakens claim</span>
+          <span class="legend-item"><span class="cue-badge intensifier">Intensifier</span> - Strengthens claim</span>
+          <span class="legend-item"><span class="cue-badge ambiguous">Ambiguous</span> - Unclear quantity</span>
+        </div>
+        <div id="cues-list"></div>
+      </section>
+
+      <!-- Inferences -->
+      <section class="section">
+        <h2>Logical Inferences</h2>
+        <div id="inferences-list"></div>
+      </section>
+
+      <!-- Evidence -->
+      <section class="section">
+        <h2>Evidence Cited</h2>
+        <div id="evidence-list"></div>
+      </section>
+
+      <!-- Questions -->
+      <section class="section">
+        <h2>Consider These Questions</h2>
+        <ul id="questions-list"></ul>
+      </section>
+
+      <!-- Metadata -->
+      <section class="section metadata">
+        <p id="confidence-text"></p>
+      </section>
+    </div>
+
+    <button id="analyze-btn" class="primary-btn">Analyze This Page</button>
+  </div>
+
+  <script src="heuristics/extractText.js"></script>
+  <script src="heuristics/cues.js"></script>
+  <script src="heuristics/inference.js"></script>
+  <script src="heuristics/spans.js"></script>
+  <script src="panel.js"></script>
+</body>
+</html>
