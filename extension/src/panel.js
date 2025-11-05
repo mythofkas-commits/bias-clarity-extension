@@ -18,27 +18,37 @@ async function getAPIBase() {
 }
 
 // Extract text from the current tab
+// Extract text from the current tab (returns actual text)
 async function extractPageText() {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      if (!tabs[0]) {
-        resolve({ url: '', text: '' });
-        return;
-      }
+      if (!tabs[0]) return resolve({ url: '', text: '' });
 
       try {
-        const results = await chrome.scripting.executeScript({
+        const [{ result: text }] = await chrome.scripting.executeScript({
           target: { tabId: tabs[0].id },
-          files: ['src/heuristics/extractText.js']
+          func: () => {
+            // --- same logic as extractText.js, but returned directly ---
+            const unwantedSelectors = 'script, style, noscript, iframe, nav, header, footer, aside, .advertisement, .ad, .comments';
+            document.querySelectorAll(unwantedSelectors).forEach(el => el.remove());
+
+            const picks = ['article','[role="main"]','main','.article-content','.post-content','.entry-content','#content'];
+            let main = null;
+            for (const sel of picks) {
+              const el = document.querySelector(sel);
+              if (el && (el.innerText || el.textContent).trim().length > 250) { main = el; break; }
+            }
+            if (!main) main = document.body;
+
+            let t = (main.innerText || main.textContent || '').replace(/\s+/g, ' ').trim();
+            if (t.length > 120000) t = t.slice(0, 120000); // keep under server max
+            return t;
+          }
         });
 
-        const text = results[0]?.result || '';
-        resolve({
-          url: tabs[0].url,
-          text: text
-        });
-      } catch (error) {
-        console.error('Error extracting text:', error);
+        resolve({ url: tabs[0].url, text: text || '' });
+      } catch (e) {
+        console.error('Error extracting text:', e);
         resolve({ url: tabs[0].url, text: '' });
       }
     });
