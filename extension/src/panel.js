@@ -98,7 +98,25 @@ async function analyzeText(url, text) {
     });
 
     if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+      let detail = '';
+      const contentType = response.headers.get('content-type') || '';
+      try {
+        if (contentType.includes('application/json')) {
+          const errorJson = await response.clone().json();
+          const extracted = errorJson && (errorJson.error || errorJson.message);
+          detail = extracted || JSON.stringify(errorJson);
+        } else {
+          const text = await response.clone().text();
+          detail = text.trim();
+        }
+      } catch (parseError) {
+        console.debug('[Argument Clarifier] Failed to parse error response body:', parseError);
+      }
+
+      const statusText = response.statusText ? ` ${response.statusText}` : '';
+      const normalizedDetail = detail && detail !== '{}' && detail !== 'null' ? detail : '';
+      const detailSuffix = normalizedDetail ? ` – ${normalizedDetail.slice(0, 250)}` : '';
+      throw new Error(`Server error: ${response.status}${statusText}${detailSuffix}`);
     }
 
     const data = await response.json();
