@@ -7,12 +7,20 @@ let currentText = '';
 
 // Fetch with timeout helper
 async function fetchWithTimeout(resource, options = {}) {
-  const { timeout = 30000 } = options;
+  const { timeout = 30000, ...fetchOptions } = options;
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
-    const response = await fetch(resource, { ...options, signal: controller.signal });
+    const response = await fetch(resource, { ...fetchOptions, signal: controller.signal });
     return response;
+  } catch (error) {
+    if (typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`Request timed out after ${timeout}ms`);
+    }
+    if (!(error instanceof Error)) {
+      throw new Error(String(error));
+    }
+    throw error;
   } finally {
     clearTimeout(id);
   }
@@ -99,7 +107,8 @@ async function analyzeText(url, text) {
     return data;
 
   } catch (error) {
-    console.error('Cloud analysis failed:', error);
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    console.error('Cloud analysis failed:', normalizedError);
     updateModeIndicator('HEURISTIC', true);
     // Fallback to local analysis
     return runLocalAnalysis(url, text);
