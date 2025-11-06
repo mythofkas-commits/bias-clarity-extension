@@ -33,5 +33,14 @@
     "32": "public/icons/32.png",
     "48": "public/icons/48.png",
     "128": "public/icons/128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/heuristics/*.js",
+        "src/contentScript.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
