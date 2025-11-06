@@ -5,6 +5,19 @@
 let currentResults = null;
 let currentText = '';
 
+// Fetch with timeout helper
+async function fetchWithTimeout(resource, options = {}) {
+  const { timeout = 30000 } = options;
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(resource, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 // Get API base from storage
 async function getAPIBase() {
   return new Promise((resolve) => {
@@ -18,37 +31,39 @@ async function getAPIBase() {
 }
 
 // Extract text from the current tab
-// Extract text from the current tab (returns actual text)
 async function extractPageText() {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
-      if (!tabs[0]) return resolve({ url: '', text: '' });
-
+      if (!tabs[0]) {
+        resolve({ url: '', text: '' });
+        return;
+      }
       try {
-        const [{ result: text }] = await chrome.scripting.executeScript({
+        // First, inject the extractor (isolated world)
+        await chrome.scripting.executeScript({
+          target: { tabId: tabs[0].id },
+          files: ['src/heuristics/extractText.js']
+        });
+        // Then, call extractText() and return its value
+        const results = await chrome.scripting.executeScript({
           target: { tabId: tabs[0].id },
           func: () => {
-            // --- same logic as extractText.js, but returned directly ---
-            const unwantedSelectors = 'script, style, noscript, iframe, nav, header, footer, aside, .advertisement, .ad, .comments';
-            document.querySelectorAll(unwantedSelectors).forEach(el => el.remove());
-
-            const picks = ['article','[role="main"]','main','.article-content','.post-content','.entry-content','#content'];
-            let main = null;
-            for (const sel of picks) {
-              const el = document.querySelector(sel);
-              if (el && (el.innerText || el.textContent).trim().length > 250) { main = el; break; }
+            try {
+              if (typeof extractText === 'function') {
+                return extractText();
+              }
+              // Safety fallback
+              const raw = (document.body && document.body.innerText) || document.documentElement.innerText || '';
+              return (raw || '').slice(0, 120000);
+            } catch (e) {
+              return '';
             }
-            if (!main) main = document.body;
-
-            let t = (main.innerText || main.textContent || '').replace(/\s+/g, ' ').trim();
-            if (t.length > 120000) t = t.slice(0, 120000); // keep under server max
-            return t;
           }
         });
-
-        resolve({ url: tabs[0].url, text: text || '' });
-      } catch (e) {
-        console.error('Error extracting text:', e);
+        const text = results && results[0] ? (results[0].result || '') : '';
+        resolve({ url: tabs[0].url, text });
+      } catch (error) {
+        console.error('Error extracting text:', error);
         resolve({ url: tabs[0].url, text: '' });
       }
     });
@@ -66,7 +81,7 @@ async function analyzeText(url, text) {
 
   try {
     // Try cloud analysis
-    const response = await fetch(`${apiBase}/analyze`, {
+    const response = await fetchWithTimeout(`${apiBase}/analyze`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -79,6 +94,7 @@ async function analyzeText(url, text) {
     }
 
     const data = await response.json();
+    console.debug('[Argument Clarifier] Cloud analysis response:', data);
     updateModeIndicator(data.model.mode, false);
     return data;
 
@@ -224,7 +240,7 @@ function renderToulmin(toulmin) {
     const div = document.createElement('div');
     div.className = 'toulmin-item';
     
-    let html = `<strong>Claim: ${structure.claimId}</strong>`;
+    let html = `<strong>Claim: ${escapeHtml(String(structure.claimId))}</strong>`;
     
     if (structure.premises && structure.premises.length > 0) {
       html += '<div class="toulmin-premises"><strong>Premises:</strong><ul>';
