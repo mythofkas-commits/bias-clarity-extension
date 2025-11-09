@@ -50,6 +50,8 @@ export type Toulmin = z.infer<typeof ToulminSchema>;
 
 // Chunk result structure
 export const ClarifierChunkSchema = z.object({
+  simplification: z.array(z.string()),
+  conclusion_trace: z.string(),
   claims: z.array(ClaimSchema),
   toulmin: z.array(ToulminSchema),
   assumptions: z.array(z.string()),
