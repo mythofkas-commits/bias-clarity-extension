@@ -34,13 +34,15 @@ export async function analyzeChunk(
   const client = initOpenAI();
 
   const systemPrompt = `You are an argument analysis expert. Analyze the given text and extract:
-1. Claims: Main assertions made (with source spans)
-2. Toulmin structure: For each claim, identify premises, warrants, and backing
-3. Assumptions: Unstated beliefs required for arguments to hold
-4. Language cues: Hedges (maybe, perhaps), intensifiers (definitely, clearly), ambiguous quantifiers (many, some)
-5. Logical inferences: Identify fallacies like correlation→causation, anecdote→generalization, part→whole
-6. Evidence: URLs, DOIs, citations, numbers, dates with spans
-7. Questions to consider: What should readers think about?
+1. Simplification: Provide a "stupid simple" summary as a list of bullet points.
+2. Conclusion Trace: In a narrative, explain how the author uses evidence to reach their main conclusions.
+3. Claims: Main assertions made (with source spans)
+4. Toulmin structure: For each claim, identify premises, warrants, and backing
+5. Assumptions: Unstated beliefs required for arguments to hold
+6. Language cues: Hedges (maybe, perhaps), intensifiers (definitely, clearly), ambiguous quantifiers (many, some). Pay special attention to emotionally charged language.
+7. Logical inferences: Identify fallacies like correlation→causation, anecdote→generalization, part→whole
+8. Evidence: URLs, DOIs, citations, numbers, dates with spans
+9. Questions to consider: What should readers think about?
 
 Return valid JSON matching the ClarifierChunk schema. Use character offsets for spans.`;
 
@@ -48,7 +50,7 @@ Return valid JSON matching the ClarifierChunk schema. Use character offsets for 
 
   try {
     const response = await client.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
@@ -67,6 +69,8 @@ Return valid JSON matching the ClarifierChunk schema. Use character offsets for 
     
     // Ensure all required fields exist with defaults
     const chunk: ClarifierChunk = {
+      simplification: parsed.simplification || [],
+      conclusion_trace: parsed.conclusion_trace || '',
       claims: parsed.claims || [],
       toulmin: parsed.toulmin || [],
       assumptions: parsed.assumptions || [],

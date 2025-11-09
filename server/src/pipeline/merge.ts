@@ -7,6 +7,8 @@ import type { ClarifierChunk } from '../schema/clarifier';
 export function mergeChunks(chunks: ClarifierChunk[]): ClarifierChunk {
   if (chunks.length === 0) {
     return {
+      simplification: [],
+      conclusion_trace: '',
       claims: [],
       toulmin: [],
       assumptions: [],
@@ -23,6 +25,8 @@ export function mergeChunks(chunks: ClarifierChunk[]): ClarifierChunk {
 
   // Merge all arrays, removing duplicates where appropriate
   const merged: ClarifierChunk = {
+    simplification: [],
+    conclusion_trace: '',
     claims: [],
     toulmin: [],
     assumptions: [],
@@ -31,6 +35,16 @@ export function mergeChunks(chunks: ClarifierChunk[]): ClarifierChunk {
     evidence: [],
     consider_questions: []
   };
+
+  // Merge simplification and conclusion_trace
+  const allSimplifications: string[] = [];
+  const allTraces: string[] = [];
+  for (const chunk of chunks) {
+    allSimplifications.push(...chunk.simplification);
+    allTraces.push(chunk.conclusion_trace);
+  }
+  merged.simplification = allSimplifications;
+  merged.conclusion_trace = allTraces.join('\n\n---\n\n');
 
   // Merge claims (keep all with unique IDs)
   const claimIds = new Set<string>();

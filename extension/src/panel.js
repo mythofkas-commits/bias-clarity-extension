@@ -201,6 +201,10 @@ function renderResults(data) {
   document.getElementById('error').classList.add('hidden');
   document.getElementById('results').classList.remove('hidden');
 
+  // Render new sections
+  renderSimplification(merged.simplification);
+  renderConclusionTrace(merged.conclusion_trace);
+
   // Render claims
   renderClaims(merged.claims);
 
@@ -229,6 +233,39 @@ function renderResults(data) {
   if (data.model.token_usage) {
     confidenceText.textContent += ` | Tokens: ${data.model.token_usage.input} in, ${data.model.token_usage.output} out`;
   }
+}
+
+// Render Simplification
+function renderSimplification(simplification) {
+  const container = document.getElementById('simplification-list');
+  const section = document.getElementById('simplification-section');
+  container.innerHTML = '';
+
+  if (!simplification || simplification.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+  simplification.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    container.appendChild(li);
+  });
+}
+
+// Render Conclusion Trace
+function renderConclusionTrace(trace) {
+  const container = document.getElementById('conclusion-trace-text');
+  const section = document.getElementById('conclusion-trace-section');
+
+  if (!trace || trace.trim().length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+  container.textContent = trace;
 }
 
 // Render claims

@@ -8,6 +8,8 @@ import type { ClarifierChunk } from '../server/src/schema/clarifier';
 describe('mergeChunks', () => {
   it('should return empty result for empty array', () => {
     const result = mergeChunks([]);
+    expect(result.simplification).toEqual([]);
+    expect(result.conclusion_trace).toEqual('');
     expect(result.claims).toEqual([]);
     expect(result.toulmin).toEqual([]);
     expect(result.assumptions).toEqual([]);
@@ -15,6 +17,8 @@ describe('mergeChunks', () => {
 
   it('should return single chunk unchanged', () => {
     const chunk: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [{ id: 'c1', paraphrase: 'Test', source_spans: [[0, 4]], paraphrase_confidence: 'LLM' }],
       toulmin: [],
       assumptions: ['assumption1'],
@@ -30,6 +34,8 @@ describe('mergeChunks', () => {
 
   it('should merge multiple chunks and deduplicate assumptions', () => {
     const chunk1: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [{ id: 'c1', paraphrase: 'Test1', source_spans: [[0, 5]], paraphrase_confidence: 'LLM' }],
       toulmin: [],
       assumptions: ['assumption1', 'assumption2'],
@@ -40,6 +46,8 @@ describe('mergeChunks', () => {
     };
 
     const chunk2: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [{ id: 'c2', paraphrase: 'Test2', source_spans: [[6, 11]], paraphrase_confidence: 'LLM' }],
       toulmin: [],
       assumptions: ['assumption2', 'assumption3'], // assumption2 is duplicate
@@ -67,6 +75,8 @@ describe('mergeChunks', () => {
 
   it('should not duplicate claims with same ID', () => {
     const chunk1: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [{ id: 'c1', paraphrase: 'Test', source_spans: [[0, 4]], paraphrase_confidence: 'LLM' }],
       toulmin: [],
       assumptions: [],
@@ -77,6 +87,8 @@ describe('mergeChunks', () => {
     };
 
     const chunk2: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [{ id: 'c1', paraphrase: 'Test', source_spans: [[0, 4]], paraphrase_confidence: 'LLM' }],
       toulmin: [],
       assumptions: [],
@@ -92,6 +104,8 @@ describe('mergeChunks', () => {
 
   it('should preserve all cues and inferences with spans', () => {
     const chunk1: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [],
       toulmin: [],
       assumptions: [],
@@ -102,6 +116,8 @@ describe('mergeChunks', () => {
     };
 
     const chunk2: ClarifierChunk = {
+      simplification: [],
+      conclusion_trace: '',
       claims: [],
       toulmin: [],
       assumptions: [],
@@ -114,5 +130,24 @@ describe('mergeChunks', () => {
     const result = mergeChunks([chunk1, chunk2]);
     expect(result.cues).toHaveLength(2);
     expect(result.inferences).toHaveLength(2);
+  });
+
+  it('should merge simplification and conclusion_trace correctly', () => {
+    const chunk1: ClarifierChunk = {
+      simplification: ['Point 1'],
+      conclusion_trace: 'Trace 1.',
+      claims: [], toulmin: [], assumptions: [], cues: [], inferences: [], evidence: [], consider_questions: []
+    };
+
+    const chunk2: ClarifierChunk = {
+      simplification: ['Point 2', 'Point 3'],
+      conclusion_trace: 'Trace 2.',
+      claims: [], toulmin: [], assumptions: [], cues: [], inferences: [], evidence: [], consider_questions: []
+    };
+
+    const result = mergeChunks([chunk1, chunk2]);
+
+    expect(result.simplification).toEqual(['Point 1', 'Point 2', 'Point 3']);
+    expect(result.conclusion_trace).toBe('Trace 1.\n\n---\n\nTrace 2.');
   });
 });
