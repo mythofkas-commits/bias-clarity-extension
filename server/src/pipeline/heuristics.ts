@@ -67,6 +67,8 @@ export function runHeuristics(text: string): ClarifierChunk {
   const questions = generateQuestions(text);
 
   return {
+    simplification: [],
+    conclusion_trace: '',
     claims,
     toulmin: [], // Heuristics can't reliably extract Toulmin structure
     assumptions,
