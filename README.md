@@ -100,6 +100,20 @@ bias-clarity-extension/
 
    Server will start on `http://localhost:3000`
 
+### Production Deployment
+
+For deploying to your own server:
+
+- **Self-Hosted**: See [DEPLOYMENT_SELF_HOSTED.md](DEPLOYMENT_SELF_HOSTED.md) for complete instructions on deploying both the extension and API to your Linux Nginx server
+- **Quick Deploy**: Use the automated script in `deployment/deploy.sh`
+- **Manual Setup**: Follow step-by-step guide for full control
+
+The deployment includes:
+- Nginx reverse proxy configuration
+- Systemd/PM2 process management
+- SSL/HTTPS setup with Let's Encrypt
+- Static file serving for extension downloads
+
 ### Extension Setup
 
 1. **Load unpacked extension**:
