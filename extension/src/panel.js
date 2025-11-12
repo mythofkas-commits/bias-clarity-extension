@@ -201,6 +201,8 @@ async function analyzeWithBYOK(url, text, apiKey, provider = 'openai') {
   }
 
   // Call OpenAI API directly from extension
+  // Security note: API key is sent from browser extension and visible in DevTools/network logs.
+  // This is a trade-off for BYOK functionality. Users should be aware their key is exposed client-side.
   const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -208,7 +210,7 @@ async function analyzeWithBYOK(url, text, apiKey, provider = 'openai') {
       'Authorization': `Bearer ${apiKey}`
     },
     body: JSON.stringify({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-4-turbo',
       response_format: { type: 'json_object' },
       temperature: 0.3,
       messages: [
@@ -227,11 +229,25 @@ Text: ${text.slice(0, 30000)}`
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+    let errorMessage = '';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.error?.message || JSON.stringify(errorData);
+    } catch (jsonErr) {
+      try {
+        const errorText = await response.text();
+        errorMessage = `Non-JSON error response: ${errorText}`;
+      } catch (textErr) {
+        errorMessage = `Failed to parse error response: ${jsonErr.message}`;
+      }
+    }
+    throw new Error(`OpenAI API error: ${response.status} - ${errorMessage}`);
   }
 
   const data = await response.json();
+  if (!data.choices?.[0]?.message?.content) {
+    throw new Error('Invalid OpenAI response structure');
+  }
   const analysis = JSON.parse(data.choices[0].message.content);
 
   // Transform to clarifier format
@@ -263,11 +279,11 @@ Text: ${text.slice(0, 30000)}`
       conclusion_trace: analysis.conclusion_trace || ''
     },
     model: {
-      name: 'gpt-4-turbo-preview-byok',
+      name: 'gpt-4-turbo-byok',
       mode: 'BYOK',
       token_usage: {
-        input: data.usage.prompt_tokens,
-        output: data.usage.completion_tokens
+        input: data.usage?.prompt_tokens || 0,
+        output: data.usage?.completion_tokens || 0
       }
     }
   };
@@ -322,35 +338,35 @@ function updateModeIndicator(mode, isFallback) {
   const indicator = document.getElementById('mode-text');
 
   switch (mode) {
-    case 'CHROME_AI':
-      indicator.textContent = '✓ Chrome Built-in AI (private, local)';
-      indicator.style.color = '#4CAF50';
-      indicator.title = 'Analysis performed locally on your device using Chrome AI';
-      break;
+  case 'CHROME_AI':
+    indicator.textContent = '✓ Chrome Built-in AI (private, local)';
+    indicator.style.color = '#4CAF50';
+    indicator.title = 'Analysis performed locally using Chrome\'s Built-in AI';
+    break;
 
-    case 'BYOK':
-      indicator.textContent = '✓ Your API Key (custom)';
-      indicator.style.color = '#2196F3';
-      indicator.title = 'Analysis using your personal API key';
-      break;
+  case 'BYOK':
+    indicator.textContent = '✓ Your API Key (custom)';
+    indicator.style.color = '#2196F3';
+    indicator.title = 'Analysis using your personal API key';
+    break;
 
-    case 'LLM':
-      indicator.textContent = '✓ Cloud Analysis (GPT-4)';
-      indicator.style.color = '#4CAF50';
-      indicator.title = 'Analysis from hosted cloud service';
-      break;
+  case 'LLM':
+    indicator.textContent = '✓ Cloud Analysis (GPT-4)';
+    indicator.style.color = '#4CAF50';
+    indicator.title = 'Analysis from hosted cloud service';
+    break;
 
-    case 'HEURISTIC':
-      indicator.textContent = isFallback
-        ? '⚠ Local Heuristics (fallback)'
-        : 'Local Heuristics (limited)';
-      indicator.style.color = '#FF9800';
-      indicator.title = 'Basic pattern matching - enable Chrome AI or cloud for better results';
-      break;
+  case 'HEURISTIC':
+    indicator.textContent = isFallback
+      ? '⚠ Local Heuristics (fallback)'
+      : 'Local Heuristics (limited)';
+    indicator.style.color = '#FF9800';
+    indicator.title = 'Basic pattern matching - enable Chrome AI or cloud for better results';
+    break;
 
-    default:
-      indicator.textContent = 'Analysis: ' + mode;
-      indicator.style.color = '#666';
+  default:
+    indicator.textContent = 'Analysis: ' + mode;
+    indicator.style.color = '#666';
   }
 }
 
