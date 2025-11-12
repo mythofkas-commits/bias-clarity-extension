@@ -25,8 +25,9 @@ NC='\033[0m' # No Color
 
 # Configuration
 DOMAIN="api.kasra.one"
+DOMAIN_USER="api"  # Virtualmin uses short domain name for user/home
 APP_NAME="argument-clarifier"
-APP_DIR="/home/${DOMAIN}/${APP_NAME}"
+APP_DIR="/home/${DOMAIN_USER}/${APP_NAME}"
 GITHUB_REPO="https://github.com/mythofkas-commits/bias-clarity-extension.git"
 NODE_VERSION="20"
 APP_PORT="3001"  # Using 3001 to avoid conflicts with other apps
@@ -98,8 +99,8 @@ preflight_checks() {
     fi
 
     # Check if domain directory exists
-    if [ ! -d "/home/${DOMAIN}" ]; then
-        error "Domain directory /home/${DOMAIN} does not exist!"
+    if [ ! -d "/home/${DOMAIN_USER}" ]; then
+        error "Domain directory /home/${DOMAIN_USER} does not exist!"
         error "Please create the domain '${DOMAIN}' in Virtualmin first."
         exit 1
     fi
@@ -216,11 +217,11 @@ deploy_app() {
     fi
 
     # Set proper ownership (Virtualmin typically uses domain user)
-    if id "${DOMAIN}" &>/dev/null; then
-        chown -R "${DOMAIN}:${DOMAIN}" "$APP_DIR"
-        log "Set ownership to ${DOMAIN} user"
+    if id "${DOMAIN_USER}" &>/dev/null; then
+        chown -R "${DOMAIN_USER}:${DOMAIN_USER}" "$APP_DIR"
+        log "Set ownership to ${DOMAIN_USER} user"
     else
-        warn "User '${DOMAIN}' not found, skipping ownership change"
+        warn "User '${DOMAIN_USER}' not found, skipping ownership change"
     fi
 
     success "Application code deployed"
@@ -344,8 +345,8 @@ start_app_with_pm2() {
 configure_nginx() {
     log "Configuring nginx reverse proxy..."
 
-    # Virtualmin nginx config location
-    NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}"
+    # Virtualmin nginx config location (uses .conf extension)
+    NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}.conf"
 
     if [ ! -f "$NGINX_CONF" ]; then
         error "Nginx config not found: $NGINX_CONF"

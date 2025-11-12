@@ -16,9 +16,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 DOMAIN="api.kasra.one"
+DOMAIN_USER="api"  # Virtualmin uses short domain name for user/home
 APP_NAME="argument-clarifier"
-APP_DIR="/home/${DOMAIN}/${APP_NAME}"
-NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}"
+APP_DIR="/home/${DOMAIN_USER}/${APP_NAME}"
+NGINX_CONF="/etc/nginx/sites-available/${DOMAIN}.conf"
 
 log() {
     echo -e "${GREEN}[INFO]${NC} $1"

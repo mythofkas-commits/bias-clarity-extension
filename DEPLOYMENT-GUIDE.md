@@ -58,7 +58,7 @@ The script will:
 
 ```bash
 # Edit the environment file
-nano /home/api.kasra.one/argument-clarifier/server/.env
+nano /home/api/argument-clarifier/server/.env
 
 # Find this line:
 OPENAI_API_KEY=REPLACE_WITH_YOUR_NEW_API_KEY
@@ -107,10 +107,10 @@ curl -X POST https://api.kasra.one/analyze \
 
 ### 📁 File Locations
 
-- **App directory:** `/home/api.kasra.one/argument-clarifier/`
-- **Backend code:** `/home/api.kasra.one/argument-clarifier/server/`
-- **Environment file:** `/home/api.kasra.one/argument-clarifier/server/.env`
-- **nginx config:** `/etc/nginx/sites-available/api.kasra.one`
+- **App directory:** `/home/api/argument-clarifier/`
+- **Backend code:** `/home/api/argument-clarifier/server/`
+- **Environment file:** `/home/api/argument-clarifier/server/.env`
+- **nginx config:** `/etc/nginx/sites-available/api.kasra.one.conf.conf`
 - **PM2 logs:** `~/.pm2/logs/`
 
 ---
@@ -158,7 +158,7 @@ cat /tmp/argument-clarifier-deploy-*.log
 ### Updating the Application
 
 ```bash
-cd /home/api.kasra.one/argument-clarifier
+cd /home/api/argument-clarifier
 git pull origin main
 cd server
 npm install --production
@@ -179,7 +179,7 @@ systemctl reload nginx
 systemctl restart nginx
 
 # View nginx config
-cat /etc/nginx/sites-available/api.kasra.one
+cat /etc/nginx/sites-available/api.kasra.one.conf
 ```
 
 ---
@@ -244,7 +244,7 @@ pm2 logs argument-clarifier --lines 100
 
 ```bash
 # Most likely missing OpenAI API key
-nano /home/api.kasra.one/argument-clarifier/server/.env
+nano /home/api/argument-clarifier/server/.env
 
 # Add your key:
 OPENAI_API_KEY=sk-your-key-here
@@ -259,7 +259,7 @@ The nginx config includes CORS headers. If still getting errors:
 
 ```bash
 # Check nginx config has CORS headers
-grep -A5 "Access-Control" /etc/nginx/sites-available/api.kasra.one
+grep -A5 "Access-Control" /etc/nginx/sites-available/api.kasra.one.conf
 
 # Should see:
 # add_header Access-Control-Allow-Origin * always;
@@ -275,7 +275,7 @@ grep -A5 "Access-Control" /etc/nginx/sites-available/api.kasra.one
 
 ```bash
 # .env file should be readable only by owner
-chmod 600 /home/api.kasra.one/argument-clarifier/server/.env
+chmod 600 /home/api/argument-clarifier/server/.env
 
 # Never commit .env to git
 # It's already in .gitignore
