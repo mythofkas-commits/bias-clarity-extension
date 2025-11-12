@@ -49,9 +49,16 @@ function saveSettings(e) {
     return;
   }
 
-  if (byokEnabled && !byokApiKey.startsWith('sk-')) {
-    showStatus('Warning: OpenAI API keys typically start with "sk-"', 'error');
+  // Length validation (OpenAI keys are typically 50-60 characters, max 256 for safety)
+  if (byokEnabled && byokApiKey.length > 256) {
+    showStatus('API key seems too long (max 256 characters)', 'error');
     return;
+  }
+
+  // Warning for non-standard key format (but allow saving)
+  if (byokEnabled && !byokApiKey.startsWith('sk-')) {
+    showStatus('Warning: OpenAI API keys typically start with "sk-"', 'warning');
+    // Continue to save despite warning
   }
 
   chrome.storage.sync.set({

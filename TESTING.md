@@ -7,7 +7,7 @@ This guide helps you test all fallback scenarios in the Argument Clarifier exten
 ### Scenario 1: Chrome Built-in AI (Priority 1)
 
 **Setup:**
-1. Use Chrome 127+ with AI features enabled
+1. Use Chrome 128+ with AI features enabled
 2. Go to `chrome://flags/#optimization-guide-on-device-model`
 3. Enable "Prompt API for Gemini Nano"
 4. Restart Chrome

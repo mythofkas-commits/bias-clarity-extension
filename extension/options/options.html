@@ -43,12 +43,13 @@
         </p>
 
         <div id="byok-settings" class="nested-settings" style="display: none; margin-left: 20px; margin-top: 10px;">
-          <label for="byok-api-key">OpenAI API Key</label>
+          <label id="byok-api-key-label" for="byok-api-key">OpenAI API Key</label>
           <input
             type="password"
             id="byok-api-key"
             name="byokApiKey"
             placeholder="sk-..."
+            aria-labelledby="byok-api-key-label"
           >
           <p class="help-text" style="font-size: 11px;">
             Your key is stored securely in Chrome's sync storage and only used for OpenAI API calls.

@@ -14,7 +14,7 @@ async function checkChromeAI() {
     if (!window.ai || !window.ai.languageModel) {
       return {
         available: false,
-        reason: 'Chrome Built-in AI not supported (requires Chrome 127+)'
+        reason: 'Chrome Built-in AI not supported (requires Chrome 128+)'
       };
     }
 
@@ -37,7 +37,7 @@ async function checkChromeAI() {
   } catch (error) {
     return {
       available: false,
-      reason: `Error checking AI: ${error.message}`
+      reason: `Error checking AI: ${error?.message || String(error)}`
     };
   }
 }

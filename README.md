@@ -69,7 +69,7 @@ Argument Clarifier offers **4 analysis methods** with intelligent priority fallb
 - **Privacy:** 100% local, no data leaves your device
 - **Cost:** Completely free
 - **Speed:** Fast (3-8 seconds)
-- **Requirements:** Chrome 127+ with AI features enabled
+- **Requirements:** Chrome 128+ with AI features enabled
 - **Quality:** Good for most use cases
 - **How to enable:** See [Chrome AI Setup](#chrome-ai-setup)
 
@@ -163,7 +163,7 @@ You can disable any method in settings. The extension will skip disabled methods
 For the best privacy and performance, enable Chrome's built-in AI:
 
 1. **Requirements**:
-   - Chrome 127 or later (check `chrome://version`)
+   - Chrome 128 or later (check `chrome://version`)
    - Available on: Windows, Mac, Linux (ChromeOS support coming)
 
 2. **Enable the feature**:
