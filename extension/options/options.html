@@ -14,23 +14,75 @@
 
     <form id="options-form">
       <div class="form-group">
-        <label for="api-base">API Base URL</label>
-        <input 
-          type="text" 
-          id="api-base" 
-          name="apiBase"
-          placeholder="https://api.kasra.one"
-        >
-        <p class="help-text">The backend server URL for cloud analysis</p>
+        <h2>Analysis Priority</h2>
+        <p class="help-text">
+          The extension tries each method in order until one succeeds.
+        </p>
       </div>
 
+      <!-- Chrome Built-in AI -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="enable-chrome-ai" name="enableChromeAI">
+          <span>Enable Chrome Built-in AI (Priority 1)</span>
+        </label>
+        <p class="help-text">
+          🔒 <strong>Most private:</strong> Analysis runs entirely on your device with no data sent to servers.
+          Requires Chrome 127+ with AI features enabled.
+        </p>
+      </div>
+
+      <!-- BYOK (Bring Your Own Key) -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="byok-enabled" name="byokEnabled">
+          <span>Use My Own API Key (Priority 2)</span>
+        </label>
+        <p class="help-text">
+          💰 <strong>You control costs:</strong> Use your personal OpenAI API key for unlimited analysis.
+        </p>
+
+        <div id="byok-settings" class="nested-settings" style="display: none; margin-left: 20px; margin-top: 10px;">
+          <label for="byok-api-key">OpenAI API Key</label>
+          <input
+            type="password"
+            id="byok-api-key"
+            name="byokApiKey"
+            placeholder="sk-..."
+          >
+          <p class="help-text" style="font-size: 11px;">
+            Your key is stored securely in Chrome's sync storage and only used for OpenAI API calls.
+            <a href="https://platform.openai.com/api-keys" target="_blank">Get an API key</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- Cloud Analysis -->
       <div class="form-group">
         <label class="checkbox-label">
           <input type="checkbox" id="cloud-analysis" name="cloudAnalysis">
-          <span>Enable cloud analysis</span>
+          <span>Enable hosted cloud service (Priority 3)</span>
         </label>
         <p class="help-text">
-          When disabled, only local heuristics will be used (reduced detail)
+          ☁️ <strong>Convenient:</strong> Use the hosted API service (requires server to be running).
+        </p>
+
+        <div id="cloud-settings" class="nested-settings" style="display: none; margin-left: 20px; margin-top: 10px;">
+          <label for="api-base">API Base URL</label>
+          <input
+            type="text"
+            id="api-base"
+            name="apiBase"
+            placeholder="https://api.kasra.one"
+          >
+        </div>
+      </div>
+
+      <!-- Local Heuristics (always on) -->
+      <div class="form-group" style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
+        <strong>🔧 Local Heuristics (Priority 4 - Always Available)</strong>
+        <p class="help-text" style="margin: 5px 0 0 0;">
+          Basic pattern matching fallback. Always available when other methods fail.
         </p>
       </div>
 

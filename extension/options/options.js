@@ -4,9 +4,26 @@
 
 // Load saved settings
 function loadSettings() {
-  chrome.storage.sync.get(['apiBase', 'cloudAnalysis'], (result) => {
+  chrome.storage.sync.get([
+    'apiBase',
+    'cloudAnalysis',
+    'enableChromeAI',
+    'byokEnabled',
+    'byokApiKey'
+  ], (result) => {
+    // Cloud settings
     document.getElementById('api-base').value = result.apiBase || 'https://api.kasra.one';
     document.getElementById('cloud-analysis').checked = result.cloudAnalysis !== false;
+
+    // Chrome AI settings (default enabled)
+    document.getElementById('enable-chrome-ai').checked = result.enableChromeAI !== false;
+
+    // BYOK settings
+    document.getElementById('byok-enabled').checked = result.byokEnabled || false;
+    document.getElementById('byok-api-key').value = result.byokApiKey || '';
+
+    // Show/hide nested settings
+    updateNestedSettings();
   });
 }
 
@@ -16,19 +33,46 @@ function saveSettings(e) {
 
   const apiBase = document.getElementById('api-base').value.trim();
   const cloudAnalysis = document.getElementById('cloud-analysis').checked;
+  const enableChromeAI = document.getElementById('enable-chrome-ai').checked;
+  const byokEnabled = document.getElementById('byok-enabled').checked;
+  const byokApiKey = document.getElementById('byok-api-key').value.trim();
 
-  // Validate URL
-  if (apiBase && !isValidUrl(apiBase)) {
-    showStatus('Please enter a valid URL', 'error');
+  // Validate cloud URL
+  if (cloudAnalysis && apiBase && !isValidUrl(apiBase)) {
+    showStatus('Please enter a valid API Base URL', 'error');
+    return;
+  }
+
+  // Validate BYOK key
+  if (byokEnabled && !byokApiKey) {
+    showStatus('Please enter your OpenAI API key', 'error');
+    return;
+  }
+
+  if (byokEnabled && !byokApiKey.startsWith('sk-')) {
+    showStatus('Warning: OpenAI API keys typically start with "sk-"', 'error');
     return;
   }
 
   chrome.storage.sync.set({
     apiBase: apiBase || 'https://api.kasra.one',
-    cloudAnalysis: cloudAnalysis
+    cloudAnalysis: cloudAnalysis,
+    enableChromeAI: enableChromeAI,
+    byokEnabled: byokEnabled,
+    byokApiKey: byokApiKey,
+    byokProvider: 'openai'  // Future: support other providers
   }, () => {
     showStatus('Settings saved successfully!', 'success');
   });
+}
+
+// Update visibility of nested settings
+function updateNestedSettings() {
+  const cloudEnabled = document.getElementById('cloud-analysis').checked;
+  const byokEnabled = document.getElementById('byok-enabled').checked;
+
+  document.getElementById('cloud-settings').style.display = cloudEnabled ? 'block' : 'none';
+  document.getElementById('byok-settings').style.display = byokEnabled ? 'block' : 'none';
 }
 
 // Validate URL
@@ -54,5 +98,12 @@ function showStatus(message, type) {
 }
 
 // Event listeners
-document.addEventListener('DOMContentLoaded', loadSettings);
+document.addEventListener('DOMContentLoaded', () => {
+  loadSettings();
+
+  // Toggle nested settings visibility
+  document.getElementById('cloud-analysis').addEventListener('change', updateNestedSettings);
+  document.getElementById('byok-enabled').addEventListener('change', updateNestedSettings);
+});
+
 document.getElementById('options-form').addEventListener('submit', saveSettings);

@@ -39,12 +39,17 @@ bias-clarity-extension/
 ## Features
 
 ### Extension
+- ✅ **Hybrid Analysis System** - 4 analysis methods with intelligent fallback
+  - 🔒 Chrome Built-in AI (local, private, free)
+  - 💰 Bring Your Own Key (OpenAI API key)
+  - ☁️ Cloud Service (hosted backend)
+  - 🔧 Local Heuristics (always available)
 - ✅ Manifest V3 compliant
 - ✅ Side panel support (Chrome 114+) with fallback overlay
 - ✅ Clickable spans for language cues and inferences
-- ✅ Local heuristics fallback when server is unreachable
+- ✅ Privacy-first: choose between local-only or cloud analysis
 - ✅ Configurable API endpoint
-- ✅ No API keys in extension (all keys on server)
+- ✅ Secure API key storage (optional BYOK mode)
 
 ### Backend
 - ✅ TypeScript with strict type checking
@@ -56,13 +61,66 @@ bias-clarity-extension/
 - ✅ Rate limiting per IP
 - ✅ CORS for chrome-extension:// origins
 
+## Hybrid Analysis System
+
+Argument Clarifier offers **4 analysis methods** with intelligent priority fallback:
+
+### 1. 🔒 Chrome Built-in AI (Priority 1 - Recommended)
+- **Privacy:** 100% local, no data leaves your device
+- **Cost:** Completely free
+- **Speed:** Fast (3-8 seconds)
+- **Requirements:** Chrome 127+ with AI features enabled
+- **Quality:** Good for most use cases
+- **How to enable:** See [Chrome AI Setup](#chrome-ai-setup)
+
+### 2. 💰 Bring Your Own Key - BYOK (Priority 2)
+- **Privacy:** Direct connection to OpenAI, not through third parties
+- **Cost:** You pay OpenAI directly (~$0.02-0.05 per article)
+- **Speed:** Medium (5-15 seconds)
+- **Requirements:** OpenAI API key with credits
+- **Quality:** Excellent (GPT-4 Turbo)
+- **How to enable:** Enter your API key in extension settings
+
+### 3. ☁️ Cloud Service (Priority 3)
+- **Privacy:** Text sent to hosted backend server
+- **Cost:** Free tier available, or self-host
+- **Speed:** Medium to slow (5-20 seconds)
+- **Requirements:** Backend server running
+- **Quality:** Excellent (GPT-4 via server)
+- **How to enable:** Set API base URL in settings
+
+### 4. 🔧 Local Heuristics (Priority 4 - Always Available)
+- **Privacy:** 100% local
+- **Cost:** Free
+- **Speed:** Very fast (<1 second)
+- **Requirements:** None
+- **Quality:** Basic pattern matching
+- **Automatically used:** When all other methods fail
+
+### How Fallback Works
+
+The extension tries each method in order until one succeeds:
+
+```
+1. Try Chrome AI → Available? ✓ Use it! → ✗ Try next
+2. Try BYOK → Key valid? ✓ Use it! → ✗ Try next
+3. Try Cloud → Server up? ✓ Use it! → ✗ Try next
+4. Use Heuristics → Always works ✓
+```
+
+You can disable any method in settings. The extension will skip disabled methods and move to the next available option.
+
 ## Privacy & Security
 
 - **No tracking**: The extension doesn't track your browsing
-- **API keys on server only**: Extension never holds sensitive keys
-- **Limited text**: Maximum 120,000 characters per analysis
-- **Cached results**: Identical text reuses cached analysis
-- **Local mode**: Analyze without sending data to server
+- **Choose your privacy level**:
+  - Maximum privacy: Chrome AI only (100% local)
+  - Balanced: BYOK (you control the API)
+  - Convenience: Cloud service (hosted)
+- **Secure storage**: API keys stored in Chrome's encrypted sync storage
+- **Limited text**: Maximum 120,000 characters per analysis (Chrome AI: 8,000)
+- **Cached results**: Cloud mode reuses cached analysis (7 days TTL)
+- **Transparent**: Mode indicator shows which method was used
 
 ## Setup
 
@@ -100,6 +158,59 @@ bias-clarity-extension/
 
    Server will start on `http://localhost:3000`
 
+### Chrome AI Setup (Recommended)
+
+For the best privacy and performance, enable Chrome's built-in AI:
+
+1. **Requirements**:
+   - Chrome 127 or later (check `chrome://version`)
+   - Available on: Windows, Mac, Linux (ChromeOS support coming)
+
+2. **Enable the feature**:
+   ```
+   1. Go to chrome://flags/#optimization-guide-on-device-model
+   2. Set to "Enabled BypassPerfRequirement"
+   3. Go to chrome://flags/#prompt-api-for-gemini-nano
+   4. Set to "Enabled"
+   5. Restart Chrome
+   ```
+
+3. **Download the AI model**:
+   ```
+   1. Go to chrome://components/
+   2. Find "Optimization Guide On Device Model"
+   3. Click "Check for update"
+   4. Wait for download (200-300 MB, takes 5-10 minutes)
+   5. Verify version is NOT "0.0.0.0"
+   ```
+
+4. **Verify it works**:
+   ```javascript
+   // Open DevTools Console and run:
+   (await window.ai.languageModel.capabilities()).available
+   // Should return: "readily"
+   ```
+
+5. **Configure in extension**:
+   - Extension settings → Enable "Chrome Built-in AI" (enabled by default)
+   - That's it! No API keys needed
+
+### BYOK Setup (Power Users)
+
+Use your own OpenAI API key for unlimited, high-quality analysis:
+
+1. **Get an OpenAI API key**:
+   - Go to https://platform.openai.com/api-keys
+   - Create new key
+   - Add credits to your account ($5-10 recommended)
+
+2. **Configure in extension**:
+   - Extension settings → Enable "Use My Own API Key"
+   - Enter your API key (starts with `sk-...`)
+   - Save settings
+
+3. **Cost estimate**: ~$0.02-0.05 per article analysis
+
 ### Extension Setup
 
 1. **Load unpacked extension**:
@@ -108,10 +219,16 @@ bias-clarity-extension/
    - Click "Load unpacked"
    - Select the `extension/` directory
 
-2. **Configure API endpoint**:
+2. **Configure analysis method** (in order of recommendation):
+   - **Option 1 (Best):** Enable Chrome AI (see above)
+   - **Option 2:** Use your own API key (see BYOK setup)
+   - **Option 3:** Use hosted cloud service (requires server setup)
+   - **Option 4:** Local heuristics only (automatic fallback, limited quality)
+
+3. **Open extension options**:
    - Right-click the extension icon → Options
-   - Set API Base URL (default: `https://api.kasra.one`)
-   - Toggle "Enable cloud analysis" as needed
+   - Choose which analysis methods to enable
+   - Configure API keys/URLs as needed
    - Click "Save Settings"
 
 ## Usage
@@ -128,13 +245,16 @@ bias-clarity-extension/
    - Evidence citations
    - Questions for critical reflection
 
-### Local Mode
+### Analysis Modes
 
-If the server is unreachable or cloud analysis is disabled:
-- Extension falls back to local heuristics
-- Provides basic cue detection and inference patterns
-- Works entirely in-browser without network requests
-- Shows "Local mode (reduced detail)" indicator
+The extension shows which analysis mode is active in the top-right indicator:
+
+- **✓ Chrome Built-in AI (private, local)** - Using Chrome's on-device AI
+- **✓ Your API Key (custom)** - Using your OpenAI API key
+- **✓ Cloud Analysis (GPT-4)** - Using hosted backend
+- **⚠ Local Heuristics (fallback)** - Basic pattern matching
+
+Hover over the indicator for more details about the current mode.
 
 ## API Endpoints
 
@@ -233,8 +353,17 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR:
 
 ### Extension Settings
 
-- **API Base URL**: Backend server endpoint
-- **Enable cloud analysis**: Toggle between cloud and local-only analysis
+Available in extension options page (right-click icon → Options):
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Enable Chrome Built-in AI** | Use Chrome's local AI (Privacy 1st priority) | Enabled |
+| **Use My Own API Key** | BYOK mode with OpenAI key (Privacy 2nd priority) | Disabled |
+| **OpenAI API Key** | Your `sk-...` key (only if BYOK enabled) | - |
+| **Enable hosted cloud service** | Use backend server (Privacy 3rd priority) | Enabled |
+| **API Base URL** | Backend server URL (only if cloud enabled) | `https://api.kasra.one` |
+
+**Privacy Tip:** For maximum privacy, enable only "Chrome Built-in AI" and disable all other options.
 
 ## Limitations
 
@@ -269,20 +398,103 @@ Contributions welcome! Please:
 
 ## Troubleshooting
 
-**Extension doesn't load**: Check that manifest.json is valid and all referenced files exist.
+### Chrome AI Issues
 
-**Analysis fails**: 
-- Check server is running (`/health` endpoint)
-- Verify API Base URL in options
-- Check browser console for errors
-- Try local mode (disable cloud analysis)
+**"Chrome AI unavailable" message**
 
-**Server errors**:
-- Ensure OPENAI_API_KEY is set
-- Check Redis is running (or disable caching)
-- Review server logs for details
+1. Verify Chrome version ≥ 127: `chrome://version`
+2. Check flags are enabled:
+   - `chrome://flags/#optimization-guide-on-device-model` → Enabled
+   - `chrome://flags/#prompt-api-for-gemini-nano` → Enabled
+3. Download the model:
+   - Go to `chrome://components/`
+   - Find "Optimization Guide On Device Model"
+   - Click "Check for update"
+   - Wait for download (can take 5-10 min)
+4. Verify in console:
+   ```javascript
+   (await window.ai.languageModel.capabilities()).available
+   // Should return: "readily"
+   ```
 
-**Slow analysis**: Large texts are chunked and may take time. Consider reducing text length or enabling caching.
+**Chrome AI returns invalid format**
+
+- The model is still experimental and may occasionally fail
+- Extension will automatically fall back to next available method
+- Check console logs for details
+
+### BYOK Issues
+
+**"OpenAI API error: 401"**
+
+- Verify your API key is correct (starts with `sk-`)
+- Check key status: https://platform.openai.com/api-keys
+- Ensure your account has credits
+- Key might have been revoked - generate a new one
+
+**"OpenAI API error: 429"**
+
+- You've hit OpenAI's rate limit
+- Wait a few minutes and try again
+- Or upgrade your OpenAI account tier
+
+**High costs with BYOK**
+
+- Each analysis costs ~$0.02-0.05
+- Switch to Chrome AI (free) for most analyses
+- Use BYOK only for important/long articles
+
+### Cloud Service Issues
+
+**"Server error: Failed to fetch"**
+
+- Check server is running: `curl http://localhost:3000/health`
+- Verify API Base URL in settings matches server
+- Check firewall isn't blocking connection
+- Try `http://localhost:3000` instead of `https://`
+
+**"Server error: 500"**
+
+- Check server logs for details
+- Ensure `OPENAI_API_KEY` is set in server `.env`
+- Verify Redis is running (or disable in code)
+- Server might be out of OpenAI credits
+
+### General Issues
+
+**Extension doesn't load**
+
+- Check manifest.json is valid
+- Verify all files exist in extension directory
+- Reload extension: `chrome://extensions/` → Reload
+
+**Analysis fails completely**
+
+1. Check browser console for errors (F12)
+2. Verify at least one analysis method is enabled
+3. Try disabling all methods except Chrome AI
+4. If still fails, open an issue with console logs
+
+**Slow analysis**
+
+- Chrome AI: 3-8 seconds (normal)
+- BYOK: 5-15 seconds (depends on OpenAI)
+- Cloud: 5-20 seconds (depends on server location)
+- Heuristics: <1 second
+
+If slower than expected:
+- Large texts take longer (chunked processing)
+- Check your internet connection
+- Server might be under load
+
+**Empty or incomplete results**
+
+- Page might not have enough text (need >50 characters)
+- Check which mode was used (mode indicator)
+- Try a different article
+- Heuristics mode provides limited results (by design)
+
+**For complete testing guide, see [TESTING.md](TESTING.md)**
 
 ## Support
 
