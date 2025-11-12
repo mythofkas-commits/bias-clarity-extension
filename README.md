@@ -402,7 +402,7 @@ Contributions welcome! Please:
 
 **"Chrome AI unavailable" message**
 
-1. Verify Chrome version ≥ 127: `chrome://version`
+1. Verify Chrome version ≥ 128: `chrome://version`
 2. Check flags are enabled:
    - `chrome://flags/#optimization-guide-on-device-model` → Enabled
    - `chrome://flags/#prompt-api-for-gemini-nano` → Enabled
