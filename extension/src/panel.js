@@ -26,16 +26,36 @@ async function fetchWithTimeout(resource, options = {}) {
   }
 }
 
-// Get API base from storage
-async function getAPIBase() {
+// Get settings from storage
+async function getSettings() {
   return new Promise((resolve) => {
-    chrome.storage.sync.get(['apiBase', 'cloudAnalysis'], (result) => {
+    chrome.storage.sync.get([
+      'apiBase',
+      'cloudAnalysis',
+      'enableChromeAI',
+      'byokEnabled',
+      'byokApiKey',
+      'byokProvider'
+    ], (result) => {
       resolve({
         apiBase: result.apiBase || 'https://api.kasra.one',
-        cloudAnalysis: result.cloudAnalysis !== false // Default to true
+        cloudAnalysis: result.cloudAnalysis !== false, // Default to true
+        enableChromeAI: result.enableChromeAI !== false, // Default to true
+        byokEnabled: result.byokEnabled || false,
+        byokApiKey: result.byokApiKey || '',
+        byokProvider: result.byokProvider || 'openai'
       });
     });
   });
+}
+
+// Legacy alias for backward compatibility
+async function getAPIBase() {
+  const settings = await getSettings();
+  return {
+    apiBase: settings.apiBase,
+    cloudAnalysis: settings.cloudAnalysis
+  };
 }
 
 // Extract text from the current tab
@@ -78,59 +98,179 @@ async function extractPageText() {
   });
 }
 
-// Analyze text using backend or local heuristics
+// Analyze text using hybrid priority fallback system
 async function analyzeText(url, text) {
-  const { apiBase, cloudAnalysis } = await getAPIBase();
-  
-  if (!cloudAnalysis) {
-    // Use local heuristics only
-    return runLocalAnalysis(url, text);
+  const settings = await getSettings();
+  const attempts = [];
+
+  // Priority 1: Chrome Built-in AI (free, private, fast)
+  if (settings.enableChromeAI) {
+    try {
+      const chromeAICheck = await checkChromeAI();
+      if (chromeAICheck.available) {
+        console.log('[Argument Clarifier] Attempting Chrome Built-in AI...');
+        const result = await analyzeChromeAI(url, text);
+        updateModeIndicator('CHROME_AI', false);
+        console.log('[Argument Clarifier] Chrome AI analysis successful');
+        return result;
+      } else {
+        attempts.push(`Chrome AI unavailable: ${chromeAICheck.reason}`);
+        console.log(`[Argument Clarifier] ${chromeAICheck.reason}`);
+      }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      attempts.push(`Chrome AI failed: ${errorMsg}`);
+      console.warn('[Argument Clarifier] Chrome AI analysis failed:', error);
+    }
   }
 
-  try {
-    // Try cloud analysis
-    const response = await fetchWithTimeout(`${apiBase}/analyze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ url, text })
-    });
+  // Priority 2: BYOK (Bring Your Own Key)
+  if (settings.byokEnabled && settings.byokApiKey) {
+    try {
+      console.log('[Argument Clarifier] Attempting BYOK analysis...');
+      const result = await analyzeWithBYOK(url, text, settings.byokApiKey, settings.byokProvider);
+      updateModeIndicator('BYOK', false);
+      console.log('[Argument Clarifier] BYOK analysis successful');
+      return result;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      attempts.push(`BYOK failed: ${errorMsg}`);
+      console.warn('[Argument Clarifier] BYOK analysis failed:', error);
+    }
+  }
 
-    if (!response.ok) {
-      let detail = '';
-      const contentType = response.headers.get('content-type') || '';
-      try {
-        if (contentType.includes('application/json')) {
-          const errorJson = await response.clone().json();
-          const extracted = errorJson && (errorJson.error || errorJson.message);
-          detail = extracted || JSON.stringify(errorJson);
-        } else {
-          const text = await response.clone().text();
-          detail = text.trim();
+  // Priority 3: Cloud service (your hosted API)
+  if (settings.cloudAnalysis) {
+    try {
+      console.log('[Argument Clarifier] Attempting cloud service...');
+      const response = await fetchWithTimeout(`${settings.apiBase}/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url, text })
+      });
+
+      if (!response.ok) {
+        let detail = '';
+        const contentType = response.headers.get('content-type') || '';
+        try {
+          if (contentType.includes('application/json')) {
+            const errorJson = await response.clone().json();
+            const extracted = errorJson && (errorJson.error || errorJson.message);
+            detail = extracted || JSON.stringify(errorJson);
+          } else {
+            const textResponse = await response.clone().text();
+            detail = textResponse.trim();
+          }
+        } catch (parseError) {
+          console.debug('[Argument Clarifier] Failed to parse error response body:', parseError);
         }
-      } catch (parseError) {
-        console.debug('[Argument Clarifier] Failed to parse error response body:', parseError);
+
+        const statusText = response.statusText ? ` ${response.statusText}` : '';
+        const normalizedDetail = detail && detail !== '{}' && detail !== 'null' ? detail : '';
+        const detailSuffix = normalizedDetail ? ` – ${normalizedDetail.slice(0, 250)}` : '';
+        throw new Error(`Server error: ${response.status}${statusText}${detailSuffix}`);
       }
 
-      const statusText = response.statusText ? ` ${response.statusText}` : '';
-      const normalizedDetail = detail && detail !== '{}' && detail !== 'null' ? detail : '';
-      const detailSuffix = normalizedDetail ? ` – ${normalizedDetail.slice(0, 250)}` : '';
-      throw new Error(`Server error: ${response.status}${statusText}${detailSuffix}`);
+      const data = await response.json();
+      console.log('[Argument Clarifier] Cloud analysis successful');
+      updateModeIndicator(data.model.mode, false);
+      return data;
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      attempts.push(`Cloud service failed: ${errorMsg}`);
+      console.warn('[Argument Clarifier] Cloud analysis failed:', error);
     }
-
-    const data = await response.json();
-    console.debug('[Argument Clarifier] Cloud analysis response:', data);
-    updateModeIndicator(data.model.mode, false);
-    return data;
-
-  } catch (error) {
-    const normalizedError = error instanceof Error ? error : new Error(String(error));
-    console.error('Cloud analysis failed:', normalizedError);
-    updateModeIndicator('HEURISTIC', true);
-    // Fallback to local analysis
-    return runLocalAnalysis(url, text);
   }
+
+  // Priority 4: Local heuristics (always available)
+  console.log('[Argument Clarifier] Falling back to local heuristics');
+  if (attempts.length > 0) {
+    console.log('[Argument Clarifier] Previous attempts:', attempts.join('; '));
+  }
+  updateModeIndicator('HEURISTIC', true);
+  return runLocalAnalysis(url, text);
+}
+
+// Analyze using user's own API key (BYOK)
+async function analyzeWithBYOK(url, text, apiKey, provider = 'openai') {
+  if (provider !== 'openai') {
+    throw new Error(`Provider ${provider} not yet supported`);
+  }
+
+  // Call OpenAI API directly from extension
+  const response = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4-turbo-preview',
+      response_format: { type: 'json_object' },
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'system',
+          content: 'You analyze argument structure without judging truth. Return valid JSON only.'
+        },
+        {
+          role: 'user',
+          content: `Analyze this text and return JSON with: claims (array of {id, paraphrase, confidence}), assumptions (array of strings), cues (array of {text, type: "HEDGE"|"INTENSIFIER"|"AMBIGUOUS"}), inferences (array of {type, explanation}), evidence (array of {kind, value}), consider_questions (array of strings), simplification (array of strings), conclusion_trace (string).
+
+Text: ${text.slice(0, 30000)}`
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+  }
+
+  const data = await response.json();
+  const analysis = JSON.parse(data.choices[0].message.content);
+
+  // Transform to clarifier format
+  return {
+    url,
+    hash: 'byok',
+    merged: {
+      claims: (analysis.claims || []).map((c, i) => ({
+        id: c.id || `claim-${i + 1}`,
+        paraphrase: c.paraphrase,
+        source_spans: [[0, 0]],
+        paraphrase_confidence: c.confidence || 'MEDIUM'
+      })),
+      toulmin: analysis.toulmin || [],
+      assumptions: analysis.assumptions || [],
+      cues: (analysis.cues || []).map(c => ({
+        text: c.text,
+        type: c.type,
+        span: [0, c.text.length]
+      })),
+      inferences: (analysis.inferences || []).map(inf => ({
+        type: inf.type,
+        explanation: inf.explanation,
+        span: [0, 0]
+      })),
+      evidence: analysis.evidence || [],
+      consider_questions: analysis.consider_questions || [],
+      simplification: analysis.simplification || [],
+      conclusion_trace: analysis.conclusion_trace || ''
+    },
+    model: {
+      name: 'gpt-4-turbo-preview-byok',
+      mode: 'BYOK',
+      token_usage: {
+        input: data.usage.prompt_tokens,
+        output: data.usage.completion_tokens
+      }
+    }
+  };
 }
 
 // Run local heuristics analysis
@@ -180,14 +320,37 @@ function runLocalAnalysis(url, text) {
 // Update mode indicator
 function updateModeIndicator(mode, isFallback) {
   const indicator = document.getElementById('mode-text');
-  if (mode === 'LLM') {
-    indicator.textContent = 'Analysis: GPT-powered';
-    indicator.style.color = '#4CAF50';
-  } else {
-    indicator.textContent = isFallback 
-      ? 'Local mode (server unreachable)' 
-      : 'Local mode (reduced detail)';
-    indicator.style.color = '#FF9800';
+
+  switch (mode) {
+    case 'CHROME_AI':
+      indicator.textContent = '✓ Chrome Built-in AI (private, local)';
+      indicator.style.color = '#4CAF50';
+      indicator.title = 'Analysis performed locally on your device using Chrome AI';
+      break;
+
+    case 'BYOK':
+      indicator.textContent = '✓ Your API Key (custom)';
+      indicator.style.color = '#2196F3';
+      indicator.title = 'Analysis using your personal API key';
+      break;
+
+    case 'LLM':
+      indicator.textContent = '✓ Cloud Analysis (GPT-4)';
+      indicator.style.color = '#4CAF50';
+      indicator.title = 'Analysis from hosted cloud service';
+      break;
+
+    case 'HEURISTIC':
+      indicator.textContent = isFallback
+        ? '⚠ Local Heuristics (fallback)'
+        : 'Local Heuristics (limited)';
+      indicator.style.color = '#FF9800';
+      indicator.title = 'Basic pattern matching - enable Chrome AI or cloud for better results';
+      break;
+
+    default:
+      indicator.textContent = 'Analysis: ' + mode;
+      indicator.style.color = '#666';
   }
 }
 
