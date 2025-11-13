@@ -110,7 +110,7 @@ curl -X POST https://api.kasra.one/analyze \
 - **App directory:** `/home/api/argument-clarifier/`
 - **Backend code:** `/home/api/argument-clarifier/server/`
 - **Environment file:** `/home/api/argument-clarifier/server/.env`
-- **nginx config:** `/etc/nginx/sites-available/api.kasra.one.conf.conf`
+- **nginx config:** `/etc/nginx/sites-available/api.kasra.one.conf`
 - **PM2 logs:** `~/.pm2/logs/`
 
 ---
