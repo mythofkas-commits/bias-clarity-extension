@@ -114,6 +114,12 @@ input[type="checkbox"] {
   border: 1px solid #4CAF50;
 }
 
+.status.warning {
+  background: #FFF3E0;
+  color: #E65100;
+  border: 1px solid #FF9800;
+}
+
 .status.error {
   background: #FFEBEE;
   color: #C62828;
