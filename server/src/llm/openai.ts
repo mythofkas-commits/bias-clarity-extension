@@ -66,12 +66,7 @@ Return valid JSON matching the ClarifierChunk schema. Use character offsets for 
     }
 
     const parsed = JSON.parse(content);
-
-    // Filter evidence to only include items with required fields
-    const validEvidence = (parsed.evidence || []).filter((item: any) => {
-      return item && typeof item.kind === 'string' && typeof item.value === 'string';
-    });
-
+    
     // Ensure all required fields exist with defaults
     const chunk: ClarifierChunk = {
       simplification: parsed.simplification || [],
@@ -81,7 +76,7 @@ Return valid JSON matching the ClarifierChunk schema. Use character offsets for 
       assumptions: parsed.assumptions || [],
       cues: parsed.cues || [],
       inferences: parsed.inferences || [],
-      evidence: validEvidence,
+      evidence: parsed.evidence || [],
       consider_questions: parsed.consider_questions || []
     };
 
