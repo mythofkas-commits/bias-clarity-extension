@@ -230,12 +230,14 @@ Text: ${text.slice(0, 30000)}`
 
   if (!response.ok) {
     let errorMessage = '';
+    // Clone the response so we can read the body twice if needed
+    const clonedResponse = response.clone();
     try {
       const errorData = await response.json();
       errorMessage = errorData.error?.message || JSON.stringify(errorData);
     } catch (jsonErr) {
       try {
-        const errorText = await response.text();
+        const errorText = await clonedResponse.text();
         errorMessage = `Non-JSON error response: ${errorText}`;
       } catch (textErr) {
         errorMessage = `Failed to parse error response: ${jsonErr.message}`;
