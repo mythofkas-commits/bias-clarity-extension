@@ -1,4 +1,4 @@
-import type { ClarifierChunk, Cue, Inference, Evidence } from '../schema/clarifier';
+import type { ClarifierChunk, Cue, Inference, Evidence, Toulmin } from '../schema/clarifier';
 
 /**
  * Heuristic patterns for language cues
@@ -56,19 +56,29 @@ export function runHeuristics(text: string): ClarifierChunk {
   const cues = findLanguageCues(text);
   const inferences = findInferences(text);
   const evidence = findEvidence(text);
-  
+
   // Extract basic claims (sentences with strong assertions)
   const claims = extractBasicClaims(text);
-  
+
   // Generate basic assumptions
   const assumptions = generateAssumptions(text);
-  
+
   // Generate questions
   const questions = generateQuestions(text);
 
+  // Build required fields expected by the ClarifierChunk type
+  const simplification = claims.map(c => c.paraphrase);
+  const conclusion_trace =
+    "HEURISTIC: constructed without LLM trace (no chain-of-thought available).";
+
+  // Ensure the array is typed as the expected Toulmin[] (not never[])
+  const toulmin: Toulmin[] = [];
+
   return {
+    simplification,
+    conclusion_trace,
     claims,
-    toulmin: [], // Heuristics can't reliably extract Toulmin structure
+    toulmin,
     assumptions,
     cues,
     inferences,
